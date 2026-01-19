@@ -69,21 +69,19 @@ export default function Compensacion() {
     const handleCierre = async () => {
         if (!cicloActivo) return;
 
-        const min = prompt("⏱️ ¿Duración del PRÓXIMO ciclo en minutos?", duracionProximo);
-        if (min === null) return; // Cancelado
+        // AUTOMATIZACIÓN: No preguntar tiempo. Usar default 10 min.
+        const minInt = 10;
 
-        const minInt = parseInt(min);
-        if (isNaN(minInt) || minInt < 1) {
-            alert("Ingrese un número válido mayor a 0");
-            return;
-        }
-
-        try {
-            await compensacionApi.post(`/compensacion/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
-            alert(`✅ Ciclo #${cicloActivo.numeroCiclo} CERRADO. Nuevo ciclo programado a ${minInt} min.`);
-            loadData();
-        } catch (error) {
-            alert("Error al cerrar ciclo: " + (error.response?.data?.message || error.message));
+        if (window.confirm(`¿Seguro que deseas cerrar el Ciclo #${cicloActivo.numeroCiclo} ahora?`)) {
+            try {
+                await compensacionApi.post(`/compensacion/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
+                alert(`✅ Ciclo #${cicloActivo.numeroCiclo} CERRADO. Siguiente en ${minInt} min.`);
+                loadData();
+            } catch (error) {
+                // Manejo de error mejorado para ver DEBUG INFO del backend
+                const msg = error.response?.data || error.message;
+                alert("Error al cerrar ciclo: " + msg);
+            }
         }
     };
 
