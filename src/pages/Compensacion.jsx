@@ -32,9 +32,11 @@ export default function Compensacion() {
 
     const loadData = async () => {
         try {
-            // FIX: Using full path compatible with MS Controller /api/v1/compensacion
-            // Assuming Gateway maps /api/compensacion -> MS Root
-            const res = await compensacionApi.get('/api/v1/compensacion/ciclos');
+            // FIX: Using relative path. baseURL in client.js + Kong Config handles the rest.
+            // Client BaseURL: .../compensacion
+            // Kong maps /compensacion -> http://ms-compensacion:8084/api/v1
+            // So we just need to append the resource path relative to the MS root.
+            const res = await compensacionApi.get('/compensacion/ciclos');
             const lista = res.data;
             setCiclos(lista);
 
@@ -57,7 +59,7 @@ export default function Compensacion() {
 
     const loadPosiciones = async (cicloId) => {
         try {
-            const res = await compensacionApi.get(`/api/v1/compensacion/ciclos/${cicloId}/posiciones`);
+            const res = await compensacionApi.get(`/compensacion/ciclos/${cicloId}/posiciones`);
             setPosiciones(res.data);
         } catch (error) {
             console.error("Error cargando posiciones:", error);
