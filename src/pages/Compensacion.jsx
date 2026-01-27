@@ -10,6 +10,15 @@ export default function Compensacion() {
     const [uptime, setUptime] = useState('');
     const [duracionProximo, setDuracionProximo] = useState(10);
 
+    const parseUTC = (dateString) => {
+        if (!dateString) return null;
+        // Si ya tiene Z o offset, dejarlo así. Si no, asumir UTC agregando Z.
+        if (dateString.endsWith('Z') || dateString.includes('+') || (dateString.includes('-') && dateString.length > 19)) {
+            return new Date(dateString);
+        }
+        return new Date(dateString + 'Z');
+    };
+
     useEffect(() => {
         loadData();
         const interval = setInterval(loadData, 10000);
@@ -19,12 +28,22 @@ export default function Compensacion() {
     useEffect(() => {
         if (cicloActivo) {
             const timer = setInterval(() => {
-                const start = new Date(cicloActivo.fechaApertura).getTime();
+                const fecha = parseUTC(cicloActivo.fechaApertura);
+                if (!fecha) return;
+
+                const start = fecha.getTime();
                 const now = new Date().getTime();
                 const diff = Math.floor((now - start) / 1000);
-                const mm = Math.floor(diff / 60).toString().padStart(2, '0');
+
+                if (diff < 0) {
+                    setUptime("Sincronizando...");
+                    return;
+                }
+
+                const hh = Math.floor(diff / 3600).toString().padStart(2, '0');
+                const mm = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
                 const ss = (diff % 60).toString().padStart(2, '0');
-                setUptime(`${mm}:${ss}`);
+                setUptime(`${hh}:${mm}:${ss}`);
             }, 1000);
             return () => clearInterval(timer);
         }
@@ -33,7 +52,18 @@ export default function Compensacion() {
     const loadData = async () => {
         try {
             const res = await compensacionApi.get('/compensacion/ciclos');
-            const lista = res.data;
+            let lista = res.data;
+
+            // Ordenar: Primero el ABIERTO, luego por fecha descendente (más reciente primero)
+            lista = lista.sort((a, b) => {
+                if (a.estado === 'ABIERTO' && b.estado !== 'ABIERTO') return -1;
+                if (a.estado !== 'ABIERTO' && b.estado === 'ABIERTO') return 1;
+                // Si ambos son igual estado, por fecha (convertida a timestamp para comparar)
+                const dateA = parseUTC(a.fechaApertura)?.getTime() || 0;
+                const dateB = parseUTC(b.fechaApertura)?.getTime() || 0;
+                return dateB - dateA;
+            });
+
             setCiclos(lista);
 
             const activo = lista.find(c => c.estado === 'ABIERTO');
@@ -82,6 +112,16 @@ export default function Compensacion() {
         window.open(`/api/compensacion/compensacion/reporte/pdf/${cicloId}`, '_blank');
     };
 
+    const formatDate = (dateStr) => {
+        const d = parseUTC(dateStr);
+        return d ? d.toLocaleString() : '-';
+    };
+
+    const formatTime = (dateStr) => {
+        const d = parseUTC(dateStr);
+        return d ? d.toLocaleTimeString() : '--:--';
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-900">Compensación y Liquidación (Clearing)</h1>
@@ -100,7 +140,7 @@ export default function Compensacion() {
                             {cicloActivo ? `⏱️ Tiempo Abierto: ${uptime}` : 'Esperando inicio...'}
                         </span>
                         <span className="text-xs text-gray-500">
-                            Apertura: {cicloActivo ? new Date(cicloActivo.fechaApertura).toLocaleTimeString() : '--:--'}
+                            Apertura: {cicloActivo ? formatTime(cicloActivo.fechaApertura) : '--:--'}
                         </span>
                     </div>
 
@@ -176,9 +216,9 @@ export default function Compensacion() {
                         {ciclos.map((c) => (
                             <tr key={c.id}>
                                 <td className="px-6 py-4 font-bold">#{c.numeroCiclo}</td>
-                                <td className="px-6 py-4">{new Date(c.fechaApertura).toLocaleString()}</td>
+                                <td className="px-6 py-4">{formatDate(c.fechaApertura)}</td>
                                 <td className="px-6 py-4">
-                                    {c.fechaCierre ? new Date(c.fechaCierre).toLocaleString() : '-'}
+                                    {c.fechaCierre ? formatDate(c.fechaCierre) : '-'}
                                 </td>
                                 <td className="px-6 py-4">
                                     {c.estado === 'ABIERTO' ? (
