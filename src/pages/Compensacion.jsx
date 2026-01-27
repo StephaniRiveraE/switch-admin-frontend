@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { compensacionApi } from '../api/client';
-import { ArrowDownCircle, CheckCircle, Clock, FileText, PlayCircle } from 'lucide-react';
+import { ArrowDownCircle, CheckCircle, Clock, FileText, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function Compensacion() {
     const [ciclos, setCiclos] = useState([]);
@@ -8,14 +10,16 @@ export default function Compensacion() {
     const [posiciones, setPosiciones] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uptime, setUptime] = useState('');
-    const [duracionProximo, setDuracionProximo] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const parseUTC = (dateString) => {
         if (!dateString) return null;
-        // Si ya tiene Z o offset, dejarlo así. Si no, asumir UTC agregando Z.
-        if (dateString.endsWith('Z') || dateString.includes('+') || (dateString.includes('-') && dateString.length > 19)) {
+        // La fecha viene del backend (Java LocalDateTime) usualmente sin Z.
+        // Asumimos SIEMPRE que es UTC.
+        if (dateString.endsWith('Z') || dateString.includes('+00:00') || dateString.includes('-00:00')) {
             return new Date(dateString);
         }
+        // Agregamos Z para forzar interpretación UTC
         return new Date(dateString + 'Z');
     };
 
@@ -54,18 +58,7 @@ export default function Compensacion() {
             const res = await compensacionApi.get('/compensacion/ciclos');
             let lista = res.data;
 
-            // Ordenar: Primero el ABIERTO, luego por fecha descendente (más reciente primero)
-            lista = lista.sort((a, b) => {
-                if (a.estado === 'ABIERTO' && b.estado !== 'ABIERTO') return -1;
-                if (a.estado !== 'ABIERTO' && b.estado === 'ABIERTO') return 1;
-                // Si ambos son igual estado, por fecha (convertida a timestamp para comparar)
-                const dateA = parseUTC(a.fechaApertura)?.getTime() || 0;
-                const dateB = parseUTC(b.fechaApertura)?.getTime() || 0;
-                return dateB - dateA;
-            });
-
-            setCiclos(lista);
-
+            // 1. Encontrar activo para el Panel Superior
             const activo = lista.find(c => c.estado === 'ABIERTO');
             if (activo) {
                 if (!cicloActivo || cicloActivo.id !== activo.id) {
@@ -75,6 +68,20 @@ export default function Compensacion() {
             } else {
                 setCicloActivo(null);
             }
+
+            // 2. Ordenar Lista para la Tabla (Abierto Primero, luego Fechas Descendentes)
+            lista.sort((a, b) => {
+                if (a.estado === 'ABIERTO') return -1; // a va primero
+                if (b.estado === 'ABIERTO') return 1;  // b va primero
+
+                // Comparar fechas UTC
+                const dateA = parseUTC(a.fechaApertura);
+                const dateB = parseUTC(b.fechaApertura);
+                return dateB - dateA; // Descendente (más nuevo a más viejo)
+            });
+
+            setCiclos(lista);
+
         } catch (error) {
             console.error("Error cargando ciclos:", error);
         } finally {
@@ -93,13 +100,11 @@ export default function Compensacion() {
 
     const handleCierre = async () => {
         if (!cicloActivo) return;
-
         const minInt = 10;
-
         if (window.confirm(`¿Seguro que deseas cerrar el Ciclo #${cicloActivo.numeroCiclo} ahora?`)) {
             try {
                 await compensacionApi.post(`/compensacion/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
-                alert(`✅ Ciclo #${cicloActivo.numeroCiclo} CERRADO. Siguiente en ${minInt} min.`);
+                alert(`✅ Ciclo #${cicloActivo.numeroCiclo} CERRADO.`);
                 loadData();
             } catch (error) {
                 const msg = error.response?.data || error.message;
@@ -114,6 +119,7 @@ export default function Compensacion() {
 
     const formatDate = (dateStr) => {
         const d = parseUTC(dateStr);
+        // toLocaleString usará la zona horaria del navegador (Ecuador UTC-5)
         return d ? d.toLocaleString() : '-';
     };
 
@@ -122,10 +128,22 @@ export default function Compensacion() {
         return d ? d.toLocaleTimeString() : '--:--';
     };
 
+    // Pagination Logic
+    const totalPages = Math.ceil(ciclos.length / ITEMS_PER_PAGE);
+    const paginatedCiclos = ciclos.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const goToPage = (p) => {
+        if (p >= 1 && p <= totalPages) setCurrentPage(p);
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-900">Compensación y Liquidación (Clearing)</h1>
 
+            {/* PANEL CICLO ACTIVO */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-indigo-50">
                     <div>
@@ -198,53 +216,84 @@ export default function Compensacion() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* HISTORIAL: TABLA CON PAGINACIÓN */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900">Historial de Cortes</h3>
                 </div>
-                <table className="w-full text-left text-sm text-gray-600">
-                    <thead className="bg-gray-50 font-medium text-gray-900">
-                        <tr>
-                            <th className="px-6 py-4">Ciclo</th>
-                            <th className="px-6 py-4">Apertura</th>
-                            <th className="px-6 py-4">Cierre</th>
-                            <th className="px-6 py-4">Estado</th>
-                            <th className="px-6 py-4 text-right">Reportes</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {ciclos.map((c) => (
-                            <tr key={c.id}>
-                                <td className="px-6 py-4 font-bold">#{c.numeroCiclo}</td>
-                                <td className="px-6 py-4">{formatDate(c.fechaApertura)}</td>
-                                <td className="px-6 py-4">
-                                    {c.fechaCierre ? formatDate(c.fechaCierre) : '-'}
-                                </td>
-                                <td className="px-6 py-4">
-                                    {c.estado === 'ABIERTO' ? (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <Clock size={12} className="mr-1" /> Abierto
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            <CheckCircle size={12} className="mr-1" /> Cerrado
-                                        </span>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                    {/* PDF BUTTON */}
-                                    <button
-                                        onClick={() => descargarPDF(c.id)}
-                                        className="text-red-600 hover:text-red-800 flex items-center gap-1 bg-red-50 px-2 py-1 rounded"
-                                        title="Descargar PDF"
-                                    >
-                                        <FileText size={16} /> PDF
-                                    </button>
-                                </td>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-600">
+                        <thead className="bg-gray-50 font-medium text-gray-900">
+                            <tr>
+                                <th className="px-6 py-4">Ciclo</th>
+                                <th className="px-6 py-4">Apertura</th>
+                                <th className="px-6 py-4">Cierre</th>
+                                <th className="px-6 py-4">Estado</th>
+                                <th className="px-6 py-4 text-right">Reportes</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {paginatedCiclos.map((c) => (
+                                <tr key={c.id} className={c.estado === 'ABIERTO' ? 'bg-indigo-50/50' : ''}>
+                                    <td className="px-6 py-4 font-bold flex items-center gap-2">
+                                        #{c.numeroCiclo}
+                                        {c.estado === 'ABIERTO' && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+                                    </td>
+                                    <td className="px-6 py-4">{formatDate(c.fechaApertura)}</td>
+                                    <td className="px-6 py-4">
+                                        {c.fechaCierre ? formatDate(c.fechaCierre) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {c.estado === 'ABIERTO' ? (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <Clock size={12} className="mr-1" /> Abierto
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                <CheckCircle size={12} className="mr-1" /> Cerrado
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        <button
+                                            onClick={() => descargarPDF(c.id)}
+                                            className="text-red-600 hover:text-red-800 flex items-center gap-1 bg-red-50 px-2 py-1 rounded"
+                                            title="Descargar PDF"
+                                        >
+                                            <FileText size={16} /> PDF
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* CONTROLES DE PAGINACIÓN */}
+                {totalPages > 1 && (
+                    <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+                        <span className="text-sm text-gray-500">
+                            Página <b>{currentPage}</b> de <b>{totalPages}</b>
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-gray-700 flex items-center"
+                            >
+                                <ChevronLeft size={16} /> Anterior
+                            </button>
+                            <button
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 rounded border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-gray-700 flex items-center"
+                            >
+                                Siguiente <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
