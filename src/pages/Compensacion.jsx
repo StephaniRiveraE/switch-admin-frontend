@@ -100,7 +100,7 @@ export default function Compensacion() {
 
     const handleCierre = async () => {
         if (!cicloActivo) return;
-        const minInt = 10;
+        const minInt = 90;
         if (window.confirm(`¿Seguro que deseas cerrar el Ciclo #${cicloActivo.numeroCiclo} ahora?`)) {
             try {
                 await compensacionApi.post(`/compensacion/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
