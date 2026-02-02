@@ -8,7 +8,6 @@ export default function Transacciones() {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
 
-    // Pagination constants
     const ITEMS_PER_PAGE = 15;
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -24,10 +23,9 @@ export default function Transacciones() {
 
 
             const response = await nucleoApi.get('/busqueda', { params });
-            // Sort by date descending (latest first) immediately upon fetch
             const sortedData = response.data.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
             setResults(sortedData);
-            setCurrentPage(1); // Reset to page 1 on new search
+            setCurrentPage(1);
         } catch (error) {
             console.error("Error buscando transacciones:", error);
             setResults([]);
@@ -36,7 +34,6 @@ export default function Transacciones() {
         }
     };
 
-    // Auto-search on mount to show latest transactions immediately
     useEffect(() => {
         handleSearch();
     }, []);
@@ -63,7 +60,6 @@ export default function Transacciones() {
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
-        // Backend envía LocalDateTime sin zona (pero es UTC). Agregamos 'Z' para que JS sepa que es UTC.
         const utcDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
         return new Date(utcDate).toLocaleString('es-EC', {
             year: 'numeric',
@@ -76,7 +72,6 @@ export default function Transacciones() {
         });
     };
 
-    // Pagination Logic
     const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
     const currentItems = results.slice(indexOfFirstItem, indexOfLastItem);
@@ -200,7 +195,6 @@ export default function Transacciones() {
                     </table>
                 </div>
 
-                {/* Pagination Controls */}
                 {results.length > 0 && (
                     <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
                         <div className="text-sm text-gray-500">
@@ -215,7 +209,6 @@ export default function Transacciones() {
                                 <ChevronLeft size={16} />
                             </button>
 
-                            {/* Simple page indication */}
                             <span className="px-4 py-2 text-sm font-medium text-gray-700">
                                 Página {currentPage} de {totalPages}
                             </span>
