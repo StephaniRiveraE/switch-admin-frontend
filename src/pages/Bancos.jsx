@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Power, Key, Link as LinkIcon, Save, X, Server } from 'lucide-react';
+import { Plus, Power, Link as LinkIcon, Save, X, Server } from 'lucide-react';
 import { directorioApi, contabilidadApi } from '../api/client';
 
 export default function Bancos() {
@@ -10,7 +10,6 @@ export default function Bancos() {
         codigoBic: '',
         nombre: '',
         urlDestino: '',
-        llavePublica: '',
         estadoOperativo: 'ONLINE',
         prefijoBin: '',
         agente: ''
@@ -50,7 +49,6 @@ export default function Bancos() {
                 codigoBic: formData.codigoBic,
                 nombre: formData.nombre,
                 urlDestino: formData.urlDestino,
-                llavePublica: formData.llavePublica,
                 estadoOperativo: formData.estadoOperativo,
                 reglasEnrutamiento: [
                     {
@@ -74,7 +72,6 @@ export default function Bancos() {
                 codigoBic: '',
                 nombre: '',
                 urlDestino: '',
-                llavePublica: '',
                 estadoOperativo: 'ONLINE',
                 prefijoBin: '',
                 agente: ''
@@ -218,19 +215,7 @@ export default function Bancos() {
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Llave Pública / Secreta</label>
-                                <div className="relative">
-                                    <Key size={16} className="absolute left-3 top-3 text-gray-400" />
-                                    <input
-                                        required
-                                        value={formData.llavePublica}
-                                        onChange={e => setFormData({ ...formData, llavePublica: e.target.value })}
-                                        className="w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
-                                        placeholder="KEY_..."
-                                    />
-                                </div>
-                            </div>
+                            {/* Campo de Llave Pública removido - La autenticación ahora es gestionada por APIM/Cognito */}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
