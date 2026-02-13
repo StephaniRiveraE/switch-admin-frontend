@@ -55,7 +55,7 @@ export default function Compensacion() {
     const loadPosiciones = async (cicloId) => {
         try {
             const res = await compensacionApi.get(`/ciclos/${cicloId}/posiciones`);
-            setPosiciones(res.data);
+            setPosiciones(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error("Error cargando posiciones:", error);
         }
@@ -141,14 +141,14 @@ export default function Compensacion() {
                                     <tr key={p.codigoBic}>
                                         <td className="px-4 py-3 font-medium text-gray-900">{p.codigoBic}</td>
                                         <td className="px-4 py-3 text-right text-green-600 font-mono">
-                                            $ {p.totalCreditos.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            $ {(p.totalCreditos || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-4 py-3 text-right text-red-600 font-mono">
-                                            $ {p.totalDebitos.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            $ {(p.totalDebitos || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className={`px-4 py-3 text-right font-bold text-base ${p.neto >= 0 ? 'text-blue-600' : 'text-orange-600'
                                             }`}>
-                                            $ {p.neto.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            $ {(p.neto || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
                                     </tr>
                                 ))}
