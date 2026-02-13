@@ -1,15 +1,27 @@
 import axios from 'axios';
 
-const API_URL = '/api';
+const APIM_BASE = 'https://gf0js7uezg.execute-api.us-east-2.amazonaws.com/dev/api';
+const API_URL = import.meta.env.VITE_API_URL || APIM_BASE;
 
+const headers = {
+    'apikey': 'SWITCH_ADMIN_SUPER_SECRET_KEY',
+    'Content-Type': 'application/json'
+};
 
-const headers = { 'apikey': 'SWITCH_ADMIN_SUPER_SECRET_KEY' };
+// Nucleo: /v2/switch
+// Ejemplo de uso: .get('/transfers/{id}') -> /api/v2/switch/transfers/{id}
+export const nucleoApi = axios.create({ baseURL: `${API_URL}/v2/switch`, headers });
 
-export const nucleoApi = axios.create({ baseURL: `${API_URL}/transacciones`, headers });
-export const directorioApi = axios.create({ baseURL: `${API_URL}/directorio`, headers });
-export const contabilidadApi = axios.create({ baseURL: `${API_URL}/contabilidad`, headers });
-export const compensacionApi = axios.create({ baseURL: `${API_URL}/compensacion`, headers });
+// Directorio: /v1
+// Ejemplo de uso: .post('/instituciones') -> /api/v1/instituciones
+export const directorioApi = axios.create({ baseURL: `${API_URL}/v1`, headers });
 
+// Contabilidad: /v1
+// Ejemplo de uso: .post('/ledger/cuentas') -> /api/v1/ledger/cuentas
+export const contabilidadApi = axios.create({ baseURL: `${API_URL}/v1`, headers });
+
+// Compensacion: /v2/compensation
+export const compensacionApi = axios.create({ baseURL: `${API_URL}/v2/compensation`, headers });
 
 [nucleoApi, directorioApi, contabilidadApi, compensacionApi].forEach(api => {
     api.interceptors.response.use(
