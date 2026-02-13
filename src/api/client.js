@@ -4,7 +4,7 @@ const APIM_BASE = 'https://gf0js7uezg.execute-api.us-east-2.amazonaws.com/dev/ap
 const API_URL = import.meta.env.VITE_API_URL || APIM_BASE;
 
 const headers = {
-    'apikey': 'SWITCH_ADMIN_SUPER_SECRET_KEY',
+    'Authorization': 'Basic N29qMTJqdHU4ZDNrZWlsdjFlMWdqa2M4ZTQ6MTZvOWJkcHBpMnFrdTY5dnVrN3FkY2ltNGZxcmtta2dnZGVyM2lxNDdwOWNzMjl0cXFvcQ==',
     'Content-Type': 'application/json'
 };
 
