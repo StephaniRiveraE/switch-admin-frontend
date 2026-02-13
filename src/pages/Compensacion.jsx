@@ -32,7 +32,7 @@ export default function Compensacion() {
 
     const loadData = async () => {
         try {
-            const res = await compensacionApi.get('/compensacion/ciclos');
+            const res = await compensacionApi.get('/ciclos');
             const lista = res.data;
             setCiclos(lista);
 
@@ -54,7 +54,7 @@ export default function Compensacion() {
 
     const loadPosiciones = async (cicloId) => {
         try {
-            const res = await compensacionApi.get(`/compensacion/ciclos/${cicloId}/posiciones`);
+            const res = await compensacionApi.get(`/ciclos/${cicloId}/posiciones`);
             setPosiciones(res.data);
         } catch (error) {
             console.error("Error cargando posiciones:", error);
@@ -68,7 +68,7 @@ export default function Compensacion() {
 
         if (window.confirm(`¿⚠️ CONFIRMAR CIERRE DE CICLO ⚠️?\n\n- Se calcularán netos multilaterales.\n- Se debitarán/acreditarán cuentas en Banco Central.\n- Ciclo #${cicloActivo.numeroCiclo} pasará a estado SETTLED.`)) {
             try {
-                await compensacionApi.post(`/compensacion/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
+                await compensacionApi.post(`/ciclos/${cicloActivo.id}/cierre?proximoCicloEnMinutos=${minInt}`);
                 alert(`✅ Ciclo #${cicloActivo.numeroCiclo} CERRADO. Siguiente en ${minInt} min.`);
                 loadData();
             } catch (error) {
