@@ -36,14 +36,20 @@ export default function Dashboard() {
     useEffect(() => {
         async function loadData() {
             try {
-                const [statsRes, banksRes] = await Promise.all([
-                    nucleoApi.get('/stats'),
-                    directorioApi.get('/instituciones')
-                ]);
-                setStats(statsRes.data);
-                setBancos(banksRes.data);
+                // Cargamos instituciones (OBLIGATORIO)
+                const banksRes = await directorioApi.get('/instituciones');
+                setBancos(banksRes.data || []);
+
+                // Intentamos cargar métricas (OPCIONAL/HEALTH)
+                try {
+                    // Usamos /health como fallback si /stats no está expuesto en APIM v2
+                    const statsRes = await nucleoApi.get('/health');
+                    setStats(statsRes.data);
+                } catch (sErr) {
+                    console.warn("Métricas no disponibles en APIM:", sErr.message);
+                }
             } catch (error) {
-                console.error("Error cargando dashboard:", error);
+                console.error("Error crítico cargando directorio:", error);
             } finally {
                 setLoading(false);
             }

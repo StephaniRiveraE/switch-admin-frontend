@@ -55,10 +55,10 @@ async function getAccessToken() {
     }
 }
 
-// Configuración de clientes
+// Configuración de clientes según Guía APIM v2.0.0
 export const nucleoApi = axios.create({ baseURL: `${API_URL}/v2/switch` });
-export const directorioApi = axios.create({ baseURL: `${API_URL}/v2/switch/admin` });
-export const contabilidadApi = axios.create({ baseURL: `${API_URL}/v2/switch/admin` });
+export const directorioApi = axios.create({ baseURL: `${API_URL}/v1` });
+export const contabilidadApi = axios.create({ baseURL: `${API_URL}/v1` }); // Funding/Ledger ahora en v1
 export const compensacionApi = axios.create({ baseURL: `${API_URL}/v2/compensation` });
 
 // Interceptor para inyectar Token Bearer en cada petición
