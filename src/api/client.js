@@ -12,13 +12,13 @@ const headers = {
 // Ejemplo de uso: .get('/transfers/{id}') -> /api/v2/switch/transfers/{id}
 export const nucleoApi = axios.create({ baseURL: `${API_URL}/v2/switch`, headers });
 
-// Directorio: /v1
-// Ejemplo de uso: .post('/instituciones') -> /api/v1/instituciones
-export const directorioApi = axios.create({ baseURL: `${API_URL}/v1`, headers });
+// Directorio: /v2/switch/admin (Proxy via Nucleo)
+// Ejemplo de uso: .post('/instituciones') -> /api/v2/switch/admin/instituciones
+export const directorioApi = axios.create({ baseURL: `${API_URL}/v2/switch/admin`, headers });
 
-// Contabilidad: /v1
-// Ejemplo de uso: .post('/ledger/cuentas') -> /api/v1/ledger/cuentas
-export const contabilidadApi = axios.create({ baseURL: `${API_URL}/v1`, headers });
+// Contabilidad: /v2/switch/admin (Proxy via Nucleo)
+// Ejemplo de uso: .post('/ledger/cuentas') -> /api/v2/switch/admin/ledger/cuentas
+export const contabilidadApi = axios.create({ baseURL: `${API_URL}/v2/switch/admin`, headers });
 
 // Compensacion: /v2/compensation
 export const compensacionApi = axios.create({ baseURL: `${API_URL}/v2/compensation`, headers });
